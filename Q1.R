@@ -14,6 +14,9 @@ x = runif(N, -1, 1)
 e = rnorm(N, 0, 1)
 y = 0.8 * x + e
 
+xVal = seq(-1, 1, length = N)
+yVal = 0.8 * xVal
+
 ## Fitted Models
 
 g1.Mod = lm(y ~ 0 + x, offset = rep(0.5, N))
@@ -24,16 +27,20 @@ g2.Mod = lm(y ~ 0 + x, offset = rep(-0.5, N))
 colVec = c("blue", "red", "black")
 lmPlotData = data.frame("X" = x,
                         "Y" = y,
+                        "undX" = xVal,
+                        "undY" = yVal,
                         "G1" = g1.Mod$fitted.values,
                         "G2" = g2.Mod$fitted.values,
                         "Color" = colVec)
 
 pdf("lmPlot.pdf")
-ggplot(lmPlotData, aes(x = X)) +
-  geom_line(aes(y = Y), color = "black", size = 1, linetype = 1) +
-  geom_line(aes(y = G1), color = "red", size = 2, linetype = 2) +
-  geom_line(aes(y = G2), color = "blue", size = 2, linetype = 2) +
-  theme_bw(base_size = 16)
+ggplot(lmPlotData, aes(x = undX)) +
+  geom_point(aes(x = X, y = Y), color = "black", size = 3) +
+  geom_line(aes(y = undY), color = "black", size = 2, linetype =1) +
+  geom_line(aes(x = X, y = G1), color = "red", size = 2, linetype = 2) +
+  geom_line(aes(x = X, y = G2), color = "blue", size = 2, linetype = 2) +
+  theme_bw(base_size = 16) +
+  labs(x = "X", y = "Y")
 dev.off()
 
 ## Expected Performance using R^2
