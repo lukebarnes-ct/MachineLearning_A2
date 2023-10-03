@@ -4,6 +4,8 @@ library(tidyverse)
 
 set.seed(2023)
 
+load("Q1_Data.RData")
+
 ##### Question 1.A
 
 ## True Underlying Model
@@ -114,3 +116,4 @@ ggplot(errorPlotData, aes(x = SetSize)) +
   scale_x_continuous(sec.axis = dup_axis(~rev(.), name = "Size of Training Set"))
 dev.off()
 
+save.image("Q1_Data.RData")
