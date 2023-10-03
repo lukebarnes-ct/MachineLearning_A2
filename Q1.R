@@ -1,7 +1,6 @@
 
 ### Libraries (if necessary)
-library(ggplot2)
-library(dplyr)
+library(tidyverse)
 
 set.seed(2023)
 
@@ -108,9 +107,10 @@ errorPlotData = data.frame("SetSize" = setSize,
 
 pdf("errorPlot.pdf")
 ggplot(errorPlotData, aes(x = SetSize)) +
-  geom_line(aes(y = ValExp), color = "black", size = 2, linetype = 1) +
-  geom_line(aes(y = rev(OutExp)), color = "red", size = 2, linetype = 1) +
-  xlab("Size of Set") + ylab("Expected Error") +
-  theme_bw(base_size = 16)
+  geom_line(aes(y = ValExp), color = "black", linewidth = 2, linetype = 1) +
+  geom_line(aes(y = OutExp), color = "red", linewidth = 2, linetype = 1) +
+  xlab("Size of Validation Set") + ylab("Expected Error") +
+  theme_bw(base_size = 16) + 
+  scale_x_continuous(sec.axis = dup_axis(~rev(.), name = "Size of Training Set"))
 dev.off()
 
