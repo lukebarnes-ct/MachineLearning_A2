@@ -46,3 +46,8 @@ betas = (solve(t(legendreFunctions) %*% legendreFunctions +
 
 betas = t(legendreFunctions) %*% legendreFunctions + 
   (lambda[2] * ones)
+
+
+trainLeg = legFunc(trainSet[, 1], 10, 45)
+legMod = glmnet(trainLeg, trainPredMat, family = "gaussian", 
+                alpha = 0, lambda = lambdas[1])

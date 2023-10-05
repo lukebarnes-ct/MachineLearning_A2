@@ -35,12 +35,19 @@ dev.off()
 
 ##### Question 2.B
 
-legendreFunctions = matrix(0, nrow = N, ncol = 1)
-legendreFunctions[, 1] = t(legendre(0, x))
-for (q in 1:10){
-  legendreFunctions = cbind(legendreFunctions, t(legendre(q, x))) 
+legFunc = function(x, Q, N){
+  
+  legendreFunctions = matrix(0, nrow = N, ncol = 1)
+  legendreFunctions[, 1] = t(legendre(0, x))
+  
+  for (q in 1:Q){
+    legendreFunctions = cbind(legendreFunctions, t(legendre(q, x))) 
+  }
+  
+  return(legendreFunctions)
 }
 
+legendreFunctions = legFunc(x, 10, N)
 lambda = c(0, 5)
 
 legPred = matrix(0, nrow = N, ncol = 2)
@@ -70,6 +77,56 @@ ggplot(legPlotData) +
   ylim(-3, 3) +
   theme_bw(base_size = 16)
 dev.off()
+
+##### Question 2.C
+
+kFoldSeq = seq(5, 50, by = 5)
+
+kFoldMat = matrix(0, nrow = 5, ncol = 10)
+valPredMat = matrix(0, nrow = 5, ncol = 10)
+trainSet = matrix(0, nrow = 45, ncol = 10)
+trainPredMat = matrix(0, nrow = 45, ncol = 10)
+
+for (k in 1:10){
+  ind = (kFoldSeq[k]-4):kFoldSeq[k]
+  kFoldMat[, k] = x[ind]
+  predMat[, k] = y[ind]
+  trainSet[, k] = x[-ind]
+  trainPredMat[, k] = y[-ind]
+}
+
+lambdas = seq(0.1, 10, length = 100)
+cvError = c()
+
+for (c in 1:length(lambdas)){
+  
+  avgErr = c()
+  
+  for(d in 1:10){
+    
+    trainLeg = legFunc(trainSet[, d], 10, 45)
+    legMod = glmnet(trainLeg, trainPredMat[, d], family = "gaussian", 
+                     alpha = 0, lambda = lambdas[c])
+    
+    valLeg = legFunc(kFoldMat[, d], 10, 5)
+    valPred = predict(legMod, valLeg)
+    avgErr[d] = mean((valPred - valPredMat[, d])^2)
+  }
+  
+  cvError[c] = mean(avgErr)
+}
+
+cvPlotData = data.frame("Lambdas" = lambdas,
+                        "CVError" = cvError)
+
+pdf("cvPlot_Q2.pdf")
+ggplot(cvPlotData) +
+  geom_line(aes(x = Lambdas, y = CVError), color = "black", linewidth = 3, linetype = 1) +
+  labs(x = expression(lambda), y = "CV Error") +
+  ylim(0, 0.8) +
+  theme_bw(base_size = 16)
+dev.off()
+
 
 
 save.image("Q2_Data.RData")
