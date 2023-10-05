@@ -25,7 +25,7 @@ lmPlotData = data.frame("X" = x,
 pdf("modPlot_Q2.pdf")
 ggplot(lmPlotData, aes(x = undX)) +
   geom_line(aes(y = undY), color = "black", linewidth = 3, linetype = 1) +
-  geom_point(aes(x = X, y = Y), color = "red", size = 3) +
+  geom_point(aes(x = X, y = Y), color = "red", size = 4) +
   labs(x = "X", y = "Y") +
   ylim(-3, 3) +
   theme_bw(base_size = 16)
@@ -57,7 +57,7 @@ legPlotData = data.frame("X" = x,
 pdf("legPlot_Q2.pdf")
 ggplot(legPlotData) +
   geom_line(aes(x = undX, y = undY), color = "black", linewidth = 3, linetype = 1) +
-  geom_point(aes(x = X, y = Y), color = "black", size = 3) +
+  geom_point(aes(x = X, y = Y), color = "black", size = 4) +
   geom_line(aes(x = X, y = leg1), color = "red", linewidth = 2, linetype = 1) +
   geom_line(aes(x = X, y = leg2), color = "blue", linewidth = 2, linetype = 1) +
   labs(x = "X", y = "Y") +
@@ -129,7 +129,7 @@ legFitPlotData = data.frame("s0" = legFitPred,
 pdf("legFitPlot_Q2.pdf")
 ggplot(legFitPlotData) +
   geom_line(aes(x = undX, y = undY), color = "black", linewidth = 3, linetype = 1) +
-  geom_point(aes(x = X, y = Y), color = "black", size = 3) +
+  geom_point(aes(x = X, y = Y), color = "black", size = 4) +
   geom_line(aes(x = X, y = s0), color = "red", linewidth = 3, linetype = 1) +
   labs(x = "X", y = "Y") +
   ylim(-3, 3) +
