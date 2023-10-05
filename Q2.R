@@ -35,30 +35,18 @@ dev.off()
 
 ##### Question 2.B
 
-legFunc = function(x, Q, N){
-  
-  legendreFunctions = matrix(0, nrow = N, ncol = 1)
-  legendreFunctions[, 1] = t(legendre(0, x))
-  
-  for (q in 1:Q){
-    legendreFunctions = cbind(legendreFunctions, t(legendre(q, x))) 
-  }
-  
-  return(legendreFunctions)
-}
-
-legendreFunctions = legFunc(x, 10, N)
+legMat = t(legendre(10, x))
 lambda = c(0, 5)
 
 legPred = matrix(0, nrow = N, ncol = 2)
 
-legMod1 = glmnet(legendreFunctions, y, family = "gaussian", 
+legMod1 = glmnet(legMat, y, family = "gaussian", 
                   alpha = 0, lambda = lambda[1])
-legPred[, 1] = predict(legMod1, legendreFunctions)
+legPred[, 1] = predict(legMod1, legMat)
 
-legMod2 = glmnet(legendreFunctions, y, family = "gaussian", 
+legMod2 = glmnet(legMat, y, family = "gaussian", 
                   alpha = 0, lambda = lambda[2])
-legPred[, 2] = predict(legMod2, legendreFunctions)
+legPred[, 2] = predict(legMod2, legMat)
 
 legPlotData = data.frame("X" = x,
                          "Y" = y,
@@ -82,16 +70,18 @@ dev.off()
 
 kFoldSeq = seq(5, 50, by = 5)
 
-kFoldMat = matrix(0, nrow = 5, ncol = 10)
+#kFoldMat = matrix(0, nrow = 5, ncol = 10)
+kFoldMat = list()
 valPredMat = matrix(0, nrow = 5, ncol = 10)
-trainSet = matrix(0, nrow = 45, ncol = 10)
+#trainSet = matrix(0, nrow = 45, ncol = 10)
+trainSet = list()
 trainPredMat = matrix(0, nrow = 45, ncol = 10)
 
 for (k in 1:10){
   ind = (kFoldSeq[k]-4):kFoldSeq[k]
-  kFoldMat[, k] = x[ind]
-  predMat[, k] = y[ind]
-  trainSet[, k] = x[-ind]
+  kFoldMat[[k]] = legMat[ind,]
+  valPredMat[, k] = y[ind]
+  trainSet[[k]] = legMat[-ind,]
   trainPredMat[, k] = y[-ind]
 }
 
@@ -104,12 +94,10 @@ for (c in 1:length(lambdas)){
   
   for(d in 1:10){
     
-    trainLeg = legFunc(trainSet[, d], 10, 45)
-    legMod = glmnet(trainLeg, trainPredMat[, d], family = "gaussian", 
+    legMod = glmnet(trainSet[[d]], trainPredMat[, d], family = "gaussian", 
                      alpha = 0, lambda = lambdas[c])
     
-    valLeg = legFunc(kFoldMat[, d], 10, 5)
-    valPred = predict(legMod, valLeg)
+    valPred = predict(legMod, kFoldMat[[d]])
     avgErr[d] = mean((valPred - valPredMat[, d])^2)
   }
   
@@ -121,12 +109,32 @@ cvPlotData = data.frame("Lambdas" = lambdas,
 
 pdf("cvPlot_Q2.pdf")
 ggplot(cvPlotData) +
-  geom_line(aes(x = Lambdas, y = CVError), color = "black", linewidth = 3, linetype = 1) +
+  geom_line(aes(x = Lambdas, y = CVError), color = "black", 
+            linewidth = 3, linetype = 1) +
   labs(x = expression(lambda), y = "CV Error") +
-  ylim(0, 0.8) +
   theme_bw(base_size = 16)
 dev.off()
 
+lambdaFit = lambdas[which.min(cvError)]
 
+legFitMod = glmnet(legMat, y, family = "gaussian", 
+                   alpha = 0, lambda = lambdaFit)
+legFitPred = predict(legFitMod, legMat)
+
+legFitPlotData = data.frame("s0" = legFitPred,
+                            "X" = x,
+                            "Y" = y,
+                            "undX" = xVal,
+                            "undY" = yVal)
+
+pdf("legFitPlot_Q2.pdf")
+ggplot(legFitPlotData) +
+  geom_line(aes(x = undX, y = undY), color = "black", linewidth = 3, linetype = 1) +
+  geom_point(aes(x = X, y = Y), color = "black", size = 3) +
+  geom_line(aes(x = X, y = s0), color = "red", linewidth = 3, linetype = 1) +
+  labs(x = "X", y = "Y") +
+  ylim(-3, 3) +
+  theme_bw(base_size = 16)
+dev.off()
 
 save.image("Q2_Data.RData")

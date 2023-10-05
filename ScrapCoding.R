@@ -32,7 +32,7 @@ lines(err.Gstar.val ~ setSize, col = "red")
 
 ## Find Beta coefficients using Least Squares
 
-ones = diag(1, dim(legendreFunctions)[2])
+ones = diag(1, dim(legMat)[2])
 
 betaMat = matrix(0, nrow = dim(legendreFunctions)[2], ncol = 2)
 
@@ -41,8 +41,8 @@ for (b in 1:2){
                          (lambda[b] * ones)) %*% t(legendreFunctions) %*% y
 }
 
-betas = (solve(t(legendreFunctions) %*% legendreFunctions + 
-                 (lambda[2] * ones)) %*% t(legendreFunctions) %*% y)
+betas = (solve(t(legMat) %*% legMat + 
+                 (lambda[1] * ones)) %*% t(legMat) %*% y)
 
 betas = t(legendreFunctions) %*% legendreFunctions + 
   (lambda[2] * ones)
@@ -51,3 +51,19 @@ betas = t(legendreFunctions) %*% legendreFunctions +
 trainLeg = legFunc(trainSet[, 1], 10, 45)
 legMod = glmnet(trainLeg, trainPredMat, family = "gaussian", 
                 alpha = 0, lambda = lambdas[1])
+
+### Legendre Function
+
+legFunc = function(x, Q, N){
+  
+  legendreFunctions = matrix(0, nrow = N, ncol = 1)
+  legendreFunctions[, 1] = t(legendre(0, x))
+  
+  for (q in 1:Q){
+    legendreFunctions = cbind(legendreFunctions, t(legendre(q, x))) 
+  }
+  
+  return(legendreFunctions)
+}
+
+legendreFunctions = legFunc(x, 10, N)
