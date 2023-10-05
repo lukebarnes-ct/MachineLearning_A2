@@ -29,3 +29,20 @@ as.numeric(g1.Mod$coefficients)
 plot(err.Gstar.out ~ setSize, type = "l", ylim = c(0.75, 1.5))
 lines(err.Gstar.val ~ setSize, col = "red")
 
+
+## Find Beta coefficients using Least Squares
+
+ones = diag(1, dim(legendreFunctions)[2])
+
+betaMat = matrix(0, nrow = dim(legendreFunctions)[2], ncol = 2)
+
+for (b in 1:2){
+  betaMat[, b] = solve(t(legendreFunctions) %*% legendreFunctions + 
+                         (lambda[b] * ones)) %*% t(legendreFunctions) %*% y
+}
+
+betas = (solve(t(legendreFunctions) %*% legendreFunctions + 
+                 (lambda[2] * ones)) %*% t(legendreFunctions) %*% y)
+
+betas = t(legendreFunctions) %*% legendreFunctions + 
+  (lambda[2] * ones)
