@@ -135,3 +135,5 @@ ggplot(legFitPlotData) +
   ylim(-3, 3) +
   theme_bw(base_size = 16)
 dev.off()
+
+### check orthogonality of polynomials first from first principles

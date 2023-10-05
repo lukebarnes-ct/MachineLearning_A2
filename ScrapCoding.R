@@ -1,4 +1,5 @@
 
+library(orthopolynom)
 ##### Scrap Coding for Assignment Questions
 
 dataMatX = matrix(0, nrow = 30, ncol = dataSize)
@@ -42,7 +43,11 @@ for (b in 1:2){
 }
 
 betas = (solve(t(legMat) %*% legMat + 
-                 (lambda[1] * ones)) %*% t(legMat) %*% y)
+                 (lambda[2] * ones)) %*% t(legMat) %*% y)
+
+t(legMat[, 2]) %*% legMat[, 3]
+
+dot(legMat[, 1], legMat[, 2])
 
 betas = t(legendreFunctions) %*% legendreFunctions + 
   (lambda[2] * ones)
@@ -67,3 +72,23 @@ legFunc = function(x, Q, N){
 }
 
 legendreFunctions = legFunc(x, 10, N)
+
+legFunc = function(x, q){
+  
+  legFuncMat = matrix(0, nrow = 50, ncol = q+1)
+  
+  for (k in 0:q){
+    
+    val = (q+k-1)/2
+    
+    legSum = (x^k) * (factorial(q)/(factorial(k)*factorial(q-k))) * (factorial(val)/(factorial(q)*factorial(val-q)))
+    legFuncMat[, k+1] = legSum
+  }
+  
+  return((2^q) * sum(legFuncMat))
+}
+
+xxx = legFunc(x, 10)
+
+legPoly = legendre.polynomials(10)
+legPoly
