@@ -5,7 +5,6 @@ library(pracma)
 library(glmnet)
 
 set.seed(2023)
-load("Q2_Data.RData")
 
 ##### Question 2.A
 
@@ -85,7 +84,7 @@ for (k in 1:10){
   trainPredMat[, k] = y[-ind]
 }
 
-lambdas = seq(0.1, 10, length = 100)
+lambdas = seq(0.1, 10, length = 200)
 cvError = c()
 
 for (c in 1:length(lambdas)){
@@ -136,5 +135,3 @@ ggplot(legFitPlotData) +
   ylim(-3, 3) +
   theme_bw(base_size = 16)
 dev.off()
-
-save.image("Q2_Data.RData")
