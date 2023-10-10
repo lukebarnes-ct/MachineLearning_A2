@@ -33,6 +33,7 @@ lines(err.Gstar.val ~ setSize, col = "red")
 
 ## Find Beta coefficients using Least Squares
 legMat = lgF
+legMat = xxx
 ones = diag(1, dim(legMat)[2])
 
 betaMat = matrix(0, nrow = dim(legMat)[2], ncol = 2)
@@ -142,7 +143,38 @@ are_vectors_orthogonal <- function(vector1, vector2) {
   return(is_orthogonal)
 }
 
-are_vectors_orthogonal(lgF[, 4], lgF[, 5])
+are_vectors_orthogonal(xxx[, 4], xxx[, 5])
 sum(rep(1, 50) * x)
 
 integrate((rep(1, 50) * x), lower = -1, upper = 1)
+
+
+####################################3
+
+legendre_polynomials <- function(x, max_degree) {
+  
+  # Initialize a list to store Legendre polynomials
+  legendre_list <- matrix(0, nrow = 50, ncol = max_degree+1)
+  
+  # Calculate Legendre polynomials for degrees 0 to max_degree
+  for (l in 0:max_degree) {
+    if (l == 0) {
+      legendre_list[, l+1] <- rep(1, 50)
+    } else if (l == 1) {
+      legendre_list[, l+1] <- x
+    } else {
+      P0 <- 1
+      P1 <- x
+      for (i in 2:l) {
+        P <- ((2 * i - 1) * x * P1 - (i - 1) * P0) / i
+        P0 <- P1
+        P1 <- P
+      }
+      legendre_list[, l+1] <- P
+    }
+  }
+  
+  return(legendre_list)
+}
+
+xxx = legendre_polynomials(x, 10)
