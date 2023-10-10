@@ -55,4 +55,14 @@ dev.off()
 ### Write an R-function which evaluates the soft-max activation function in
 ### matrix form.
 
+### Z is 3 x N
 
+softMaxMat = function(z){
+  
+  expZ = exp(z)
+  sumZ = colSums(expZ)
+  
+  sM = expZ / sumZ
+  
+  return(sM)
+}
