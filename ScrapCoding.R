@@ -32,18 +32,24 @@ lines(err.Gstar.val ~ setSize, col = "red")
 
 
 ## Find Beta coefficients using Least Squares
-
+legMat = lgF
 ones = diag(1, dim(legMat)[2])
 
-betaMat = matrix(0, nrow = dim(legendreFunctions)[2], ncol = 2)
+betaMat = matrix(0, nrow = dim(legMat)[2], ncol = 2)
 
 for (b in 1:2){
-  betaMat[, b] = solve(t(legendreFunctions) %*% legendreFunctions + 
-                         (lambda[b] * ones)) %*% t(legendreFunctions) %*% y
+  betaMat[, b] = (solve(t(legMat) %*% legMat + 
+                          (lambda[b] * ones)) %*% t(legMat) %*% y)
 }
 
 betas = (solve(t(legMat) %*% legMat + 
-                 (lambda[2] * ones)) %*% t(legMat) %*% y)
+                 (lambda[1] * ones)) %*% t(legMat) %*% y)
+
+yhat1 = as.matrix(x) %*% t(as.matrix(betaMat[, 1]))
+yhat1 = rowSums(yhat1)
+
+yhat2 = as.matrix(x) %*% t(as.matrix(betaMat[, 2]))
+yhat2 = rowSums(yhat2)
 
 t(legMat[, 2]) %*% legMat[, 3]
 
@@ -56,6 +62,11 @@ betas = t(legendreFunctions) %*% legendreFunctions +
 trainLeg = legFunc(trainSet[, 1], 10, 45)
 legMod = glmnet(trainLeg, trainPredMat, family = "gaussian", 
                 alpha = 0, lambda = lambdas[1])
+
+plot(lmPlotData$undX, lmPlotData$undY, type = "l", ylim = c(-3, 3))
+points(lmPlotData$X, lmPlotData$Y, col = "red")
+lines(lmPlotData$X, yhat1, col = "blue")
+lines(lmPlotData$X, yhat2, col = "green")
 
 ### Legendre Function
 
@@ -90,5 +101,48 @@ legFunc = function(x, q){
 
 xxx = legFunc(x, 10)
 
-legPoly = legendre.polynomials(10)
+legPoly = legendre.polynomials(10, normalized = TRUE)
 legPoly
+
+o2 = -0.5 + 1.5*x^2
+legPoly[[4]]
+
+lgF = matrix(0, nrow = 50, ncol = 11)
+
+for (lg in 1:11){
+  func = legPoly[[lg]]
+  lgF[, lg] = lapply(x, as.function(func))
+}
+
+lgF[, 1] = 0.7071068 * rep(1, 50)
+lgF[, 2] = 1.224745*x
+lgF[, 3] = -0.7905694 + 2.371708*x^2 
+lgF[, 4] = -2.806243*x + 4.677072*x^3 
+lgF[, 5] = 0.7954951 - 7.954951*x^2 + 9.280777*x^4
+lgF[, 6] = 4.397265*x - 20.52057*x^3 + 18.46851*x^5 
+lgF[, 7] = -0.7967218 + 16.73116*x^2 - 50.19347*x^4 + 36.80855*x^6 
+lgF[, 8] = -5.990715*x + 53.91644*x^3 - 118.6162*x^5 + 73.42906*x^7
+lgF[, 9] = 0.7972005 - 28.69922*x^2 + 157.8457*x^4 - 273.5992*x^6 + 146.571*x^8
+lgF[, 10] = 7.585119*x - 111.2484*x^3 + 433.8688*x^5 - 619.8126*x^7 + 292.6893*x^9
+lgF[, 11] = -0.7974349 + 43.85892*x^2 - 380.1106*x^4 + 1140.332*x^6 - 1384.689*x^8 + 584.6464*x^10
+
+
+
+#############################
+
+are_vectors_orthogonal <- function(vector1, vector2) {
+  
+  # Calculate the dot product of the subvectors
+  dot_product <- sum(vector1 * vector2)
+  
+  # Check if the dot product is approximately zero (within a tolerance)
+  tolerance <- 1e-10  # You can adjust this tolerance as needed
+  is_orthogonal <- abs(dot_product) < tolerance
+  
+  return(is_orthogonal)
+}
+
+are_vectors_orthogonal(lgF[, 4], lgF[, 5])
+sum(rep(1, 50) * x)
+
+integrate((rep(1, 50) * x), lower = -1, upper = 1)
