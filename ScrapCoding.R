@@ -178,3 +178,6 @@ legendre_polynomials <- function(x, max_degree) {
 }
 
 xxx = legendre_polynomials(x, 10)
+
+
+
