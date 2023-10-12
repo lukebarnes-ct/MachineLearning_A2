@@ -179,5 +179,73 @@ legendre_polynomials <- function(x, max_degree) {
 
 xxx = legendre_polynomials(x, 10)
 
+##### Q4.B
+
+softMax = function(z){
+  expZ = exp(z)
+  sumZ = sum(expZ)
+  
+  return(expZ/sumZ)
+}
+
+y1 = as.matrix(dat[1:10, 3:5])
+yhat1 = matrix(2, 10, 3)
+y1 * yhat1
 
 
+jjj = sFMat$expZ[2, ]/sFMat$sumZ
+jjj[1:10]
+sFMat$sM[2, 1:10]
+
+sFMat$expZ[1, 3]/sFMat$sumZ[3]
+
+M  = 100
+x1 = seq(-4, 4,length = M)
+x2 = seq(-4, 4,length = M)
+xx1 = rep(x1, M)
+xx2 = rep(x2, each = M)
+
+abline(h = x2,v = x1, lty = 3)
+
+XX = cbind(xx1, xx2)
+YY = matrix(1, M^2, 3)
+res_fitted = neuralNet(XX, YY, resOpt$estimate, m, nu)
+
+plot(xx2~xx1,pch = 16, col = color.gradient(yyVar$Response))
+points(xxPlotData$X2~xxPlotData$X1, col = colours[Y], pch = 16)
+
+predY = round(t(res_fitted$A2))
+
+xxPlotData = data.frame("X1" = xx1,
+                        "X2" = xx2,
+                        "Y1" = predY[, 1],
+                        "Y2" = predY[, 2],
+                        "Y3" = predY[, 3])
+
+yyVar = xxPlotData %>%
+  mutate(Response1 = Y1) %>%
+  mutate(Response2 = recode(Y2, "1" = 2)) %>%
+  mutate(Response3 = recode(Y3, "1" = 3)) %>%
+  pivot_longer(col=starts_with("Response"), names_to="Response", names_prefix="Response") %>% 
+  filter(value ==1 | value == 2 | value == 3) %>%
+  mutate(Response = value) %>%
+  select(X1, X2, Response)
+
+ggplot(yyVar, aes(x = X1)) +
+  geom_point(aes(x = X1, y = X2), color = colours[var$Response], size = 4) +
+  labs(x = "X1", y = "X2") +
+  ylim(-4.5, 4.5) +
+  theme_bw(base_size = 16)
+
+randomMat = Y * log(t(sFMat))
+
+error = Y * 0
+wh0 = which(Y == 0, arr.ind = TRUE)
+error[wh0] = 1
+
+rowSums(Y*log(t(sFMat)) + (1-Y)*log(1-t(sFMat)))
+Y*log(t(sFMat)) + (1-Y)*log(1-t(sFMat))
+
+(1-Y)*log(1-t(sFMat)
+
+          
