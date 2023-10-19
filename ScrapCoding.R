@@ -232,7 +232,8 @@ yyVar = xxPlotData %>%
   select(X1, X2, Response)
 
 ggplot(yyVar, aes(x = X1)) +
-  geom_point(aes(x = X1, y = X2), color = colours[var$Response], size = 4) +
+  geom_point(aes(x = X1, y = X2), color = color.gradient(yyVar$Response), size = 4) +
+  geom_point(aes(x = X1, y = X2), col = "black", size = 5, shape = trueY) +
   labs(x = "X1", y = "X2") +
   ylim(-4.5, 4.5) +
   theme_bw(base_size = 16)
@@ -248,4 +249,20 @@ Y*log(t(sFMat)) + (1-Y)*log(1-t(sFMat))
 
 (1-Y)*log(1-t(sFMat)
 
-          
+          objFunc = function(y, yhat, N){
+            
+            wh1 = which(y == )
+            error[ind0] = log(1 - yhat[ind0])
+            error[ind1] = (y[ind1]) * log(yhat[ind1])
+            
+            # innerSum = rowSums(error)
+            innerSum = rowSums(y*log(yhat) + (1-y)*log(1-yhat))
+            
+            outerSum = sum(innerSum)
+            
+            obj = -(1/N) * outerSum
+            
+            print(paste0("OBJ is: ", obj))
+            
+            return(obj)
+          }    

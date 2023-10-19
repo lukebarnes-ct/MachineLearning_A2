@@ -58,6 +58,8 @@ softMaxMat = function(z){
   
   sM = expZ / matSumZ
   
+  rownames(sM) = c("J1", "J2", "J3")
+  
   return(sM)
   #return(list(expZ = expZ, sumZ = sumZ, sM = sM))
 }
@@ -76,23 +78,19 @@ sig1 = function(z){
 
 objFunc = function(y, yhat, N){
   
-  print(paste0("NAs at: ", which(is.na(yhat), arr.ind = TRUE)))
-
   error = y * 0
-  ind0 = which(y == 0, arr.ind = TRUE)
   ind1 = which(y == 1, arr.ind = TRUE)
   
-  error[ind0] = log(1 - yhat[ind0])
-  error[ind1] = (y[ind1]) * log(yhat[ind1])
+  error[ind1] = log(yhat[ind1])
   
-  # innerSum = rowSums(error)
-  innerSum = rowSums(y*log(yhat) + (1-y)*log(1-yhat))
+  if(sum(is.na(yhat[ind1])) > 0 | sum(yhat[yhat == 0]) > 0)
   
-  outerSum = sum(innerSum)
+    which(yhat == 0, )
+  outerSum = sum(error)
   
   obj = -(1/N) * outerSum
   
-  print(paste0("OBJ is: ", obj))
+  # print(paste0("OBJ is: ", obj))
   
   return(obj)
 }
@@ -126,19 +124,23 @@ neuralNet = function(X, Y, theta, m, nu){
   A2 = softMaxMat(t(W2)%*%A1+b2%*%ones)
   
   yHat = t(A2)
-
-  error = objFunc(Y, yHat, N)
-  E2 = error + (nu * (sum(W1^2) + sum(W2^2))/N)
   
-  return(list(A2 = A2, A1 = A1, E1 = error, E2 = E2,
-              W2 = W2, b2 = b2, ones = ones))
+  error = Y * 0
+  ind1 = which(Y == 1, arr.ind = TRUE)
+  error[ind1] = log(yHat[ind1])
+
+  # E1 = objFunc(Y, yHat, N)
+  E1 = - (1/N) * sum(error)
+  E2 = E1 + (nu * (sum(W1^2) + sum(W2^2))/N)
+  
+  return(list(A2 = A2, A1 = A1, E1 = E1, E2 = E2))
 }
 
 X = as.matrix(dat[, 1:2])
 Y = as.matrix(dat[, 3:5])
 
 nu  = 0
-m   = 360/20
+m   = 360/90
 
 p = dim(X)[2]
 q = dim(Y)[2]
@@ -154,7 +156,6 @@ obj = function(pars){
 obj(thetaRand)
 
 fitMod = neuralNet(X, Y, thetaRand, m, nu)
-sFMat = softMaxMat(t(fitMod$W2)%*%fitMod$A1+fitMod$b2%*%fitMod$ones)
 
 # Fit the neural network using a standard optimizer in R:
 
@@ -168,10 +169,10 @@ set.seed(2022)
 N = dim(X)[1]
 set = sample(1:N, 0.5*N, replace = FALSE)
 
-XTrain = as.matrix(X[set,])
-YTrain = as.matrix(Y[set,])
-XVal = as.matrix(X[-set,])
-YVal = as.matrix(Y[-set,])
+XTrain = as.matrix(X[set, ])
+YTrain = as.matrix(Y[set, ])
+XVal = as.matrix(X[-set, ])
+YVal = as.matrix(Y[-set, ])
 
 nu = 0.5
 
@@ -183,48 +184,84 @@ objPen = function(pars){
 
 objPen(thetaRand)
 
-splitter = function(N, K, shuffle = FALSE){
-  wind = N %*% K 
-  origin = 1:N
-  if (shuffle){
-    origin = sample(N, N, replace = TRUE)
-  }
-  
-  indexes = matrix(origin, K, wind, byrow = TRUE)
-  return(indexes)
-}
-
-M = 10
-K = 5
-indices = splitter(N, K)
+M = 25
+K = 1
 valErr = matrix(0, K, M)
-nus = exp(seq(-5, 0, length = M))
+inErr = valErr
+nus = exp(seq(-7.6, -2.3, length = M))
 
-for (k in 1:K){
-  
-  setVal = c(indices[k,])
-  setTrain = c(indices[-k,])
-  XTrain = as.matrix(X[setTrain,])
-  YTrain = as.matrix(Y[setTrain,])
-  XVal = as.matrix(X[-setVal,])
-  YVal = as.matrix(Y[-setVal,])
-  
-  for (i in 1:M) {
+for (i in 1:M) {
     
     nu = nus[i]
-    resOpt = nlm(objPen, theta_rand, iterlim = 500)
+    resOpt = nlm(objPen, thetaRand, iterlim = 1000)
     
-    resVal = neuralNet(XVal,YVal, resOpt$estimate, m, 0)
-    valErr[k, i] = resVal$E1
+    resIn = neuralNet(XTrain, YTrain, resOpt$estimate, m, 0)
+    inErr[K, i] = resIn$E1
     
-    print(paste0("Validation Run ", i, "| nu =", round(nu, 4)))
+    resVal = neuralNet(XVal, YVal, resOpt$estimate, m, 0)
+    valErr[K, i] = resVal$E1
     
-  }
+    print(paste0("Validation Run ", K, " ,", i, "| nu =", round(nu, 4)))
+    print(paste0("In Error: ", inErr[K, i]))
+    print(paste0("Val Error: ", valErr[K, i]))
+    
 }
 
-eCV = apply(valErr, 2, mean) 
-eCV.sd = apply(valErr, 2, sd) 
+valPlotData = data.frame("ValErr" = c(valErr),
+                         "TrainErr" = c(inErr),
+                         "Nus" = nus)
 
-plot(eCV~nus, type = "b", main = "Validation Analysis")
-segments(nus, eCV, nus, eCV + eCV.sd)
-segments(nus, eCV, nus, eCV - eCV.sd)
+ggplot(valPlotData, aes(x = Nus)) +
+  #geom_line(aes(y = TrainErr), col = "black", linewidth = 1) +
+  geom_point(aes(y = TrainErr), col = "black", size = 4) +
+  #geom_line(aes(y = ValErr), col = "red", linewidth = 1) +
+  geom_point(aes(y = ValErr), col = "red", size = 4) +
+  xlab("Nu") +
+  ylab("Cross Entropy Error") +
+  theme_bw(base_size = 16)
+
+
+##### Question 4.C
+
+## Regularised Neural Network and corresponding response curve
+
+nu = nus[which.min(valErr)]
+optRes = nlm(objPen, thetaRand, iterlim = 1000)
+
+M  = 300
+x1 = seq(-4, 4,length = M)
+x2 = seq(-4, 4,length = M)
+xx1 = rep(x1, M)
+xx2 = rep(x2, each = M)
+
+XX = cbind(xx1, xx2)
+YY = matrix(1, M^2, 3)
+
+regMod = neuralNet(XX, YY, optRes$estimate, m, nu)
+
+predY = round(t(regMod$A2))
+
+xxPlotData = data.frame("X1" = xx1,
+                        "X2" = xx2,
+                        "Y1" = predY[, 1],
+                        "Y2" = predY[, 2],
+                        "Y3" = predY[, 3])
+
+yyVar = xxPlotData %>%
+  mutate(Response1 = Y1) %>%
+  mutate(Response2 = recode(Y2, "1" = 2)) %>%
+  mutate(Response3 = recode(Y3, "1" = 3)) %>%
+  pivot_longer(col = starts_with("Response"), names_to = "Response", names_prefix = "Response") %>% 
+  filter(value == 1 | value == 2 | value == 3) %>%
+  mutate(Response = value) %>%
+  select(X1, X2, Response)
+
+oldData = var %>%
+  mutate(numResponse = recode(Response, "Yi1" = 1, "Yi2" = 2, "Yi3" = 3))
+
+ggplot(yyVar, aes(x = X1)) +
+  geom_point(aes(x = X1, y = X2), color = color.gradient(yyVar$Response), size = 4) +
+  geom_text(data = oldData, aes(x = X1, y = X2, label = numResponse), size = 5, col = "white") +
+  labs(x = "X1", y = "X2") +
+  ylim(-4, 4) +
+  theme_bw(base_size = 16)
