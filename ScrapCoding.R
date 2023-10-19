@@ -240,6 +240,49 @@ ggplot(yyVar, aes(x = X1)) +
 
 randomMat = Y * log(t(sFMat))
 
+
+# %-Fold Cross Validation
+
+crossVal = function(X, Y){
+  ns = 1:N
+  k1 = sample(ns, size = N/5, replace = FALSE)
+  ns = ns[-k1]
+  k2 = sample(ns, size = N/5, replace = FALSE)
+  ns = ns[-k2]
+  k3 = sample(ns, size = N/5, replace = FALSE)
+  ns = ns[-k3]
+  k4 = sample(ns, size = N/5, replace = FALSE)
+  ns = ns[-k4]
+  k5 = ns
+  
+  X1.T = as.matrix(X[k1, ])
+  X2.T = as.matrix(X[k2, ])
+  X3.T = as.matrix(X[k3, ])
+  X4.T = as.matrix(X[k4, ])
+  X5.T = as.matrix(X[k5, ])
+  
+  Y1.T = as.matrix(Y[k1, ])
+  Y2.T = as.matrix(Y[k2, ])
+  Y3.T = as.matrix(Y[k3, ])
+  Y4.T = as.matrix(Y[k4, ])
+  Y5.T = as.matrix(Y[k5, ])
+  
+  X1.V = as.matrix(X[-k1, ])
+  X2.V = as.matrix(X[-k2, ])
+  X3.V = as.matrix(X[-k3, ])
+  X4.V = as.matrix(X[-k4, ])
+  X5.V = as.matrix(X[-k5, ])
+  
+  Y1.V = as.matrix(Y[-k1, ])
+  Y2.V = as.matrix(Y[-k2, ])
+  Y3.V = as.matrix(Y[-k3, ])
+  Y4.V = as.matrix(Y[-k4, ])
+  Y5.V = as.matrix(Y[-k5, ])
+  
+  return()
+  
+}
+
 error = Y * 0
 wh0 = which(Y == 0, arr.ind = TRUE)
 error[wh0] = 1
@@ -265,4 +308,7 @@ Y*log(t(sFMat)) + (1-Y)*log(1-t(sFMat))
             print(paste0("OBJ is: ", obj))
             
             return(obj)
-          }    
+          }
+          
+          
+          sFMat = softMaxMat(t(fitMod$W2)%*%fitMod$A1+fitMod$b2%*%fitMod$ones)

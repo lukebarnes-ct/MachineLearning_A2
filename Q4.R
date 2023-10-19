@@ -210,7 +210,7 @@ for (i in 1:M) {
 valPlotData = data.frame("ValErr" = c(valErr),
                          "TrainErr" = c(inErr),
                          "Nus" = nus)
-
+pdf("valPlot_Q4.pdf")
 ggplot(valPlotData, aes(x = Nus)) +
   #geom_line(aes(y = TrainErr), col = "black", linewidth = 1) +
   geom_point(aes(y = TrainErr), col = "black", size = 4) +
@@ -219,7 +219,7 @@ ggplot(valPlotData, aes(x = Nus)) +
   xlab("Nu") +
   ylab("Cross Entropy Error") +
   theme_bw(base_size = 16)
-
+dev.off()
 
 ##### Question 4.C
 
@@ -259,9 +259,11 @@ yyVar = xxPlotData %>%
 oldData = var %>%
   mutate(numResponse = recode(Response, "Yi1" = 1, "Yi2" = 2, "Yi3" = 3))
 
+pdf("responsePlot_Q4.pdf")
 ggplot(yyVar, aes(x = X1)) +
   geom_point(aes(x = X1, y = X2), color = color.gradient(yyVar$Response), size = 4) +
   geom_text(data = oldData, aes(x = X1, y = X2, label = numResponse), size = 5, col = "white") +
   labs(x = "X1", y = "X2") +
   ylim(-4, 4) +
   theme_bw(base_size = 16)
+dev.off()
