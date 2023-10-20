@@ -279,9 +279,35 @@ crossVal = function(X, Y){
   Y4.V = as.matrix(Y[-k4, ])
   Y5.V = as.matrix(Y[-k5, ])
   
-  return()
+  return(x)
   
 }
+
+IsoMap = function(res, d){
+  
+  ## Your Work Here...
+  
+  N    = dim(res$edges)[1]
+  Dg   = matrix(Inf, N, N)
+  
+  for(i in 1:N){
+    
+    Dg[i, res$neighbours[i, ]] = res$edges[i, ]
+  }
+  
+  diag(Dg) = 0
+  asp = allShortestPaths(Dg)
+  
+  H = diag(N) - (1/N * matrix(1, N, N))
+  
+  tau = -0.5 * H %*% (asp$length^2) %*% H
+  sv = svd(tau)
+  
+  # Return a list with the embedding in U:
+  return(list(Dg = Dg, d = d, ASP = asp, SVD = sv))
+}
+
+dgMod = IsoMap(res, 2)
 
 error = Y * 0
 wh0 = which(Y == 0, arr.ind = TRUE)
@@ -310,5 +336,170 @@ Y*log(t(sFMat)) + (1-Y)*log(1-t(sFMat))
             return(obj)
           }
           
-          
-          sFMat = softMaxMat(t(fitMod$W2)%*%fitMod$A1+fitMod$b2%*%fitMod$ones)
+sFMat = softMaxMat(t(fitMod$W2)%*%fitMod$A1+fitMod$b2%*%fitMod$ones)
+
+########################################################################
+
+legFunc = function(x, q){
+  
+  legFuncSum = 0
+  
+  for (k in 0:q){
+    
+    fact1 = factorial(q)/(factorial(k)*factorial(q-k))
+    fact2 = factorial(q+k)/(factorial(k)*factorial(q))
+    
+    legSum = ((x-1)/2)^k * (fact1) * (fact2)
+    
+    legFuncSum = legFuncSum + legSum
+  }
+  
+  return(legFuncSum)
+}
+
+legPolyMat = matrix(0, N, 11)
+
+for (i in 0:10){
+  
+  legPolyMat[, i + 1] = legFunc(x, i)
+}
+
+lambda = c(0, 5)
+ones = diag(dim(legPolyMat)[2])
+
+legPred = matrix(0, nrow = N, ncol = 2)
+
+betaMat = matrix(0, nrow = dim(legPolyMat)[2], ncol = 2)
+
+for (b in 1:2){
+  betaMat[, b] = (solve(t(legPolyMat) %*% legPolyMat + 
+                          (lambda[b] * ones)) %*% t(legPolyMat) %*% y)
+  
+  legPred[, b] = legPolyMat %*% betaMat[, b]
+}
+
+legPlotData = data.frame("X" = x,
+                         "Y" = y,
+                         "undX" = xVal,
+                         "undY" = yVal,
+                         "leg1" = legPred[, 1],
+                         "leg2" = legPred[, 2])
+
+pdf("legPlot_Q2.pdf")
+ggplot(legPlotData) +
+  geom_line(aes(x = undX, y = undY), color = "black", linewidth = 3, linetype = 1) +
+  geom_point(aes(x = X, y = Y), color = "black", size = 4) +
+  geom_line(aes(x = X, y = leg1), color = "red", linewidth = 2, linetype = 1) +
+  geom_line(aes(x = X, y = leg2), color = "blue", linewidth = 2, linetype = 1) +
+  labs(x = "X", y = "Y") +
+  ylim(-3, 3) +
+  theme_bw(base_size = 16)
+dev.off()
+
+#############################################################
+
+## Old Q2 with GLMNET
+
+legMat = t(legendre(10, x))
+lambda = c(0, 5)
+
+legPred = matrix(0, nrow = N, ncol = 2)
+
+legMod1 = glmnet(legMat, y, family = "gaussian", 
+                 alpha = 0, lambda = lambda[1])
+legPred[, 1] = predict(legMod1, legMat)
+
+legMod2 = glmnet(legMat, y, family = "gaussian", 
+                 alpha = 0, lambda = lambda[2])
+legPred[, 2] = predict(legMod2, legMat)
+
+legPlotData = data.frame("X" = x,
+                         "Y" = y,
+                         "undX" = xVal,
+                         "undY" = yVal,
+                         "leg1" = legPred[, 1],
+                         "leg2" = legPred[, 2])
+
+pdf("legPlot_Q2.pdf")
+ggplot(legPlotData) +
+  geom_line(aes(x = undX, y = undY), color = "black", linewidth = 3, linetype = 1) +
+  geom_point(aes(x = X, y = Y), color = "black", size = 4) +
+  geom_line(aes(x = X, y = leg1), color = "red", linewidth = 2, linetype = 1) +
+  geom_line(aes(x = X, y = leg2), color = "blue", linewidth = 2, linetype = 1) +
+  labs(x = "X", y = "Y") +
+  ylim(-3, 3) +
+  theme_bw(base_size = 16)
+dev.off()
+
+kFoldSeq = seq(5, 50, by = 5)
+
+#kFoldMat = matrix(0, nrow = 5, ncol = 10)
+kFoldMat = list()
+valPredMat = matrix(0, nrow = 5, ncol = 10)
+#trainSet = matrix(0, nrow = 45, ncol = 10)
+trainSet = list()
+trainPredMat = matrix(0, nrow = 45, ncol = 10)
+
+for (k in 1:10){
+  ind = (kFoldSeq[k]-4):kFoldSeq[k]
+  kFoldMat[[k]] = legPolyMat[ind,]
+  valPredMat[, k] = y[ind]
+  trainSet[[k]] = legPolyMat[-ind,]
+  trainPredMat[, k] = y[-ind]
+}
+
+lambdas = seq(0.1, 10, length = 200)
+cvError = c()
+
+for (c in 1:length(lambdas)){
+  
+  avgErr = c()
+  
+  for(d in 1:10){
+    
+    legMod = glmnet(trainSet[[d]], trainPredMat[, d], family = "gaussian", 
+                    alpha = 0, lambda = lambdas[c])
+    
+    valPred = predict(legMod, kFoldMat[[d]])
+    avgErr[d] = mean((valPred - valPredMat[, d])^2)
+  }
+  
+  cvError[c] = mean(avgErr)
+}
+
+cvPlotData = data.frame("Lambdas" = lambdas,
+                        "CVError" = cvError)
+
+pdf("cvPlot_Q2.pdf")
+ggplot(cvPlotData) +
+  geom_line(aes(x = Lambdas, y = CVError), color = "black", 
+            linewidth = 3, linetype = 1) +
+  labs(x = expression(lambda), y = "CV Error") +
+  theme_bw(base_size = 16)
+dev.off()
+
+lambdaFit = lambdas[which.min(cvError)]
+
+legFitMod = glmnet(legMat, y, family = "gaussian", 
+                   alpha = 0, lambda = lambdaFit)
+legFitPred = predict(legFitMod, legMat)
+
+legFitPlotData = data.frame("s0" = legFitPred,
+                            "X" = x,
+                            "Y" = y,
+                            "undX" = xVal,
+                            "undY" = yVal)
+
+pdf("legFitPlot_Q2.pdf")
+ggplot(legFitPlotData) +
+  geom_line(aes(x = undX, y = undY), color = "black", linewidth = 3, linetype = 1) +
+  geom_point(aes(x = X, y = Y), color = "black", size = 4) +
+  geom_line(aes(x = X, y = s0), color = "red", linewidth = 3, linetype = 1) +
+  labs(x = "X", y = "Y") +
+  ylim(-3, 3) +
+  theme_bw(base_size = 16)
+dev.off()
+
+### check orthogonality of polynomials first from first principles
+
+

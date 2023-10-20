@@ -34,18 +34,43 @@ dev.off()
 
 ##### Question 2.B
 
-legMat = t(legendre(10, x))
+legFunc = function(x, q){
+  
+  legFuncSum = 0
+  
+  for (k in 0:q){
+    
+    fact1 = factorial(q)/(factorial(k)*factorial(q-k))
+    fact2 = factorial(q+k)/(factorial(k)*factorial(q))
+    
+    legSum = ((x-1)/2)^k * (fact1) * (fact2)
+    
+    legFuncSum = legFuncSum + legSum
+  }
+  
+  return(legFuncSum)
+}
+
+legPolyMat = matrix(0, N, 11)
+
+for (i in 0:10){
+  
+  legPolyMat[, i + 1] = legFunc(x, i)
+}
+
 lambda = c(0, 5)
+ones = diag(dim(legPolyMat)[2])
 
 legPred = matrix(0, nrow = N, ncol = 2)
 
-legMod1 = glmnet(legMat, y, family = "gaussian", 
-                  alpha = 0, lambda = lambda[1])
-legPred[, 1] = predict(legMod1, legMat)
+betaMat = matrix(0, nrow = dim(legPolyMat)[2], ncol = 2)
 
-legMod2 = glmnet(legMat, y, family = "gaussian", 
-                  alpha = 0, lambda = lambda[2])
-legPred[, 2] = predict(legMod2, legMat)
+for (b in 1:2){
+  betaMat[, b] = (solve(t(legPolyMat) %*% legPolyMat + 
+                          (lambda[b] * ones)) %*% t(legPolyMat) %*% y)
+  
+  legPred[, b] = legPolyMat %*% betaMat[, b]
+}
 
 legPlotData = data.frame("X" = x,
                          "Y" = y,
@@ -78,9 +103,9 @@ trainPredMat = matrix(0, nrow = 45, ncol = 10)
 
 for (k in 1:10){
   ind = (kFoldSeq[k]-4):kFoldSeq[k]
-  kFoldMat[[k]] = legMat[ind,]
+  kFoldMat[[k]] = legPolyMat[ind,]
   valPredMat[, k] = y[ind]
-  trainSet[[k]] = legMat[-ind,]
+  trainSet[[k]] = legPolyMat[-ind,]
   trainPredMat[, k] = y[-ind]
 }
 
@@ -93,10 +118,11 @@ for (c in 1:length(lambdas)){
   
   for(d in 1:10){
     
-    legMod = glmnet(trainSet[[d]], trainPredMat[, d], family = "gaussian", 
-                     alpha = 0, lambda = lambdas[c])
+    betaMod = (solve(t(trainSet[[d]]) %*% trainSet[[d]] + 
+                       (lambdas[c] * ones)) %*% t(trainSet[[d]]) %*% trainPredMat[, d])
     
-    valPred = predict(legMod, kFoldMat[[d]])
+    valPred = kFoldMat[[d]] %*% betaMod
+    
     avgErr[d] = mean((valPred - valPredMat[, d])^2)
   }
   
@@ -116,9 +142,11 @@ dev.off()
 
 lambdaFit = lambdas[which.min(cvError)]
 
-legFitMod = glmnet(legMat, y, family = "gaussian", 
-                   alpha = 0, lambda = lambdaFit)
-legFitPred = predict(legFitMod, legMat)
+betaFitMod = (solve(t(legPolyMat) %*% legPolyMat + 
+                      (lambdaFit * ones)) %*% t(legPolyMat) %*% y)
+
+legFitPred = legPolyMat %*% betaFitMod
+
 
 legFitPlotData = data.frame("s0" = legFitPred,
                             "X" = x,
@@ -136,4 +164,4 @@ ggplot(legFitPlotData) +
   theme_bw(base_size = 16)
 dev.off()
 
-### check orthogonality of polynomials first from first principles
+
