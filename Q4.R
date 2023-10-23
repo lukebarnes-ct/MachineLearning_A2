@@ -266,4 +266,4 @@ ggplot(yyVar, aes(x = X1)) +
   labs(x = "X1", y = "X2") +
   ylim(-4, 4) +
   theme_bw(base_size = 16)
-dev.off()
+dev.off( )

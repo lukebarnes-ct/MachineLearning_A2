@@ -40,15 +40,12 @@ legFunc = function(x, q){
   
   for (k in 0:q){
     
-    fact1 = factorial(q)/(factorial(k)*factorial(q-k))
-    fact2 = factorial(q+k)/(factorial(k)*factorial(q))
-    
-    legSum = ((x-1)/2)^k * (fact1) * (fact2)
+    legSum = (x)^k * (choose(q, k)) * (choose((q+k-1)/2, q))
     
     legFuncSum = legFuncSum + legSum
   }
   
-  return(legFuncSum)
+  return(2^q * legFuncSum)
 }
 
 legPolyMat = matrix(0, N, 11)

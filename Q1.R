@@ -36,9 +36,9 @@ lmPlotData = data.frame("X" = x,
 pdf("lmPlot.pdf")
 ggplot(lmPlotData, aes(x = undX)) +
   geom_point(aes(x = X, y = Y), color = "black", size = 3) +
-  geom_line(aes(y = undY), color = "black", size = 2, linetype =1) +
-  geom_line(aes(x = X, y = G1), color = "red", size = 2, linetype = 2) +
-  geom_line(aes(x = X, y = G2), color = "blue", size = 2, linetype = 2) +
+  geom_line(aes(y = undY), color = "black", linewidth = 2, linetype =1) +
+  geom_line(aes(x = X, y = G1), color = "red", linewidth = 2, linetype = 2) +
+  geom_line(aes(x = X, y = G2), color = "blue", linewidth = 2, linetype = 2) +
   theme_bw(base_size = 16) +
   labs(x = "X", y = "Y")
 dev.off()
