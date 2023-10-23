@@ -502,4 +502,3 @@ dev.off()
 
 ### check orthogonality of polynomials first from first principles
 
-
