@@ -431,6 +431,27 @@ ggplot(legPlotData) +
   theme_bw(base_size = 16)
 dev.off()
 
+## Obj Function
+
+objFunc = function(y, yhat, N){
+  
+  error = y * 0
+  ind1 = which(y == 1, arr.ind = TRUE)
+  
+  error[ind1] = log(yhat[ind1])
+  
+  if(sum(is.na(yhat[ind1])) > 0 | sum(yhat[yhat == 0]) > 0)
+    
+    which(yhat == 0, )
+  outerSum = sum(error)
+  
+  obj = -(1/N) * outerSum
+  
+  # print(paste0("OBJ is: ", obj))
+  
+  return(obj)
+}
+
 kFoldSeq = seq(5, 50, by = 5)
 
 #kFoldMat = matrix(0, nrow = 5, ncol = 10)
@@ -501,4 +522,202 @@ ggplot(legFitPlotData) +
 dev.off()
 
 ### check orthogonality of polynomials first from first principles
+
+N1 = 80
+dataSize1 = 1000
+setSize1 = 5:75
+
+matG.star.out1 = matrix(0, nrow = length(setSize1), ncol = dataSize1)
+matG.star.val1 = matrix(0, nrow = length(setSize1), ncol = dataSize1)
+
+for(i in 1:dataSize1){
+  
+  xi = runif(N1, -1, 1)
+  ei = rnorm(N1, 0, 1)
+  yi = 0.8 * xi + ei
+  
+  for (j in 1:length(setSize1)){
+    
+    sizeS = setSize1[j]
+    sizeTrain = N1 - sizeS
+    
+    samp = sort(sample(1:N1, sizeS, replace = FALSE))
+    
+    valData = xi[samp]
+    trainData = xi[-samp]
+    
+    yVal = yi[samp]
+    yTrain = yi[-samp]
+    
+    g1.Mod.i = lm(yTrain ~ 0 + trainData, offset = rep(0.5, sizeTrain))
+    b1 = as.numeric(g1.Mod.i$coefficients)
+    
+    g2.Mod.i = lm(yTrain ~ 0 + trainData, offset = rep(-0.5, sizeTrain))
+    b2 = as.numeric(g2.Mod.i$coefficients)
+    
+    g1.valPred = 0.5 + (b1 * valData)
+    g2.valPred = -0.5 + (b2 * valData)
+    
+    G1.MSE.i = MSE(sizeS, g1.valPred, yVal)
+    G2.MSE.i = MSE(sizeS, g2.valPred, yVal)
+    
+    if(G1.MSE.i < G2.MSE.i){
+      
+      matG.star.out1[j, i] = MSE(sizeTrain, g1.Mod.i$fitted.values, yTrain)
+      matG.star.val1[j, i] = G1.MSE.i
+    }
+    
+    else {
+      matG.star.out1[j, i] = MSE(sizeTrain, g2.Mod.i$fitted.values, yTrain)
+      matG.star.val1[j, i] = G2.MSE.i
+    }
+  }
+}
+
+err.Gstar.out1 = rowMeans(matG.star.out1)
+err.Gstar.val1 = rowMeans(matG.star.val1)
+
+errorPlotData1 = data.frame("SetSize" = setSize1,
+                           "ValExp" = err.Gstar.val1,
+                           "OutExp" = err.Gstar.out1)
+
+ggplot(errorPlotData1, aes(x = SetSize)) +
+  geom_smooth(aes(y = ValExp), color = "black", linewidth = 2, linetype = 1, se = F) +
+  geom_smooth(aes(y = OutExp), color = "red", linewidth = 2, linetype = 1, se = F) +
+  xlab("Size of Validation Set") + ylab("Expected Error") +
+  geom_vline(xintercept = 18, linewidth = 0.5, linetype = 2, col = "blue") +
+  theme_bw(base_size = 16) + 
+  scale_x_continuous(sec.axis = dup_axis(~rev(.), name = "Size of Training Set"))
+
+
+nu = exp(-40)
+resOpt = nlm(objPen, thetaRand, iterlim = 1000)
+
+resIn = neuralNet(XTrain, YTrain, resOpt$estimate, m, 0)
+inErr = resIn$E1
+
+resVal = neuralNet(XVal, YVal, resOpt$estimate, m, 0)
+valErr = resVal$E1
+
+print(paste0("Validation Run ", K, " ,", i, "| nu =", round(nu, 4)))
+print(paste0("In Error: ", inErr))
+print(paste0("Val Error: ", valErr))
+
+for(i in 1:dataSize){
+  
+  xi = runif(N, -1, 1)
+  ei = rnorm(N, 0, 1)
+  yi = 0.8 * xi + ei
+  
+  for (j in 1:length(setSize)){
+    
+    sizeS = setSize[j]
+    sizeTrain = N - sizeS
+    
+    samp = sort(sample(1:N, sizeS, replace = FALSE))
+    
+    valData = xi[samp]
+    trainData = xi[-samp]
+    
+    yVal = yi[samp]
+    yTrain = yi[-samp]
+    
+    g1.Mod.i = lm(yTrain ~ 0 + trainData, offset = rep(0.5, sizeTrain))
+    b1 = as.numeric(g1.Mod.i$coefficients)
+    
+    g2.Mod.i = lm(yTrain ~ 0 + trainData, offset = rep(-0.5, sizeTrain))
+    b2 = as.numeric(g2.Mod.i$coefficients)
+    
+    g1.valPred = 0.5 + (b1 * valData)
+    g2.valPred = -0.5 + (b2 * valData)
+    
+    G1.MSE.i = MSE(sizeS, g1.valPred, yVal)
+    G2.MSE.i = MSE(sizeS, g2.valPred, yVal)
+    
+    if(G1.MSE.i < G2.MSE.i){
+      
+      matG.star.out[j, i] = MSE(sizeTrain, g1.Mod.i$fitted.values, yTrain)
+      matG.star.val[j, i] = G1.MSE.i
+    }
+    
+    else {
+      matG.star.out[j, i] = MSE(sizeTrain, g2.Mod.i$fitted.values, yTrain)
+      matG.star.val[j, i] = G2.MSE.i
+    }
+  }
+}
+
+#pdf("Figures/errorPlot.pdf")
+ggplot(errorPlotData, aes(x = SetSize)) +
+  geom_smooth(aes(y = ValExp), color = "black", linewidth = 2, linetype = 1, se = F) +
+  geom_smooth(aes(y = OutExp), color = "red", linewidth = 2, linetype = 1, se = F) +
+  xlab("Size of Validation Set") + ylab("Expected Error") +
+  geom_vline(xintercept = 18, linewidth = 0.5, linetype = 2, col = "blue") +
+  theme_bw(base_size = 16) + 
+  scale_x_continuous(sec.axis = dup_axis(~rev(.), name = "Size of Training Set"))
+#dev.off()
+
+dx = 1/10
+phiX = 0.5
+a = 1
+
+for(i in 1:dataSize){
+  
+  xi = runif(N, -1, 1)
+  yi = f(xi) + rnorm(N, 0, 1)
+  
+  for (j in 1:length(setSize)){
+    
+    sizeS = setSize[j]
+    sizeTrain = N - sizeS
+    
+    samp = sort(sample(1:N, sizeS, replace = FALSE))
+    
+    valData = xi[samp]
+    trainData = xi[-samp]
+    
+    yVal = yi[samp]
+    yTrain = yi[-samp]
+    
+    g1.Mod.i = lm(yTrain ~ 0 + trainData, offset = rep(0.5, sizeTrain))
+    b1 = as.numeric(g1.Mod.i$coefficients)
+    
+    g2.Mod.i = lm(yTrain ~ 0 + trainData, offset = rep(-0.5, sizeTrain))
+    b2 = as.numeric(g2.Mod.i$coefficients)
+    
+    g1.valPred = 0.5 + (b1 * valData)
+    g2.valPred = -0.5 + (b2 * valData)
+    
+    G1.MSE.i = MSE(sizeS, g1.valPred, yVal)
+    G2.MSE.i = MSE(sizeS, g2.valPred, yVal)
+    
+    if(G1.MSE.i < G2.MSE.i){
+      
+      matG.star.val[j, i] = G1.MSE.i
+      
+      g1.Pred = 0.5 + (b1 * xi)
+      actY = f(xi)
+      
+      #matG.star.out[j, i] = sum((g1.Pred - actY)^2 * phiX * dx)
+      
+      # matG.star.out[j, i] = mean((g1.Pred - actY)^2)
+      # matG.star.out[j, i] = mean((g1.valPred - f(valData))^2)
+      
+      matG.star.out[j, i] = integrate(outIntegral, lower = -1, upper = 1, TRUE, b1)$value
+    }
+    
+    else {
+      matG.star.val[j, i] = G2.MSE.i
+      
+      g2.Pred = -0.5 + (b2 * xi)
+      actY = f(xi)
+      
+      #matG.star.out[j, i] = sum((g2.Pred - actY)^2 * phiX * dx)
+      # matG.star.out[j, i] = mean((g2.Pred - actY)^2)
+      # matG.star.out[j, i] = mean((g2.valPred - f(valData))^2)
+      
+      matG.star.out[j, i] = integrate(outIntegral, lower = -1, upper = 1, FALSE, b2)$value 
+    }
+  }
+}
 

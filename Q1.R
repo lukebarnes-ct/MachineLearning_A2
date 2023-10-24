@@ -31,7 +31,7 @@ lmPlotData = data.frame("X" = x,
                         "G2" = g2.Mod$fitted.values,
                         "Color" = colVec)
 
-pdf("lmPlot.pdf")
+pdf("Figures/lmPlot.pdf")
 ggplot(lmPlotData, aes(x = undX)) +
   geom_point(aes(x = X, y = Y), color = "black", size = 3) +
   geom_line(aes(y = undY), color = "black", linewidth = 2, linetype =1) +
@@ -55,17 +55,37 @@ G2.MSE = MSE(N, lmPlotData$G2, y)
 
 ##### Question 1.B
 
-dataSize = 10000
+dataSize = 100
 setSize = 5:25
 
 matG.star.out = matrix(0, nrow = 21, ncol = dataSize)
 matG.star.val = matrix(0, nrow = 21, ncol = dataSize)
 
+f = function(x){
+  y = 0.8 * x
+  return(y)
+}
+
+outIntegral = function(x, g1, beta){
+  
+  if (g1 == TRUE){
+    g = 0.5 + (beta * x)
+  }
+  
+  else {
+    g = -0.5 + (beta * x)
+  }
+  
+  f = f(x)
+  
+  int = (g - f)^2 * 0.5
+  return(int)
+}
+
 for(i in 1:dataSize){
   
   xi = runif(N, -1, 1)
-  ei = rnorm(N, 0, 1)
-  yi = 0.8 * xi + ei
+  yi = f(xi) + rnorm(N, 0, 1)
   
   for (j in 1:length(setSize)){
     
@@ -94,13 +114,16 @@ for(i in 1:dataSize){
     
     if(G1.MSE.i < G2.MSE.i){
       
-      matG.star.out[j, i] = MSE(sizeTrain, g1.Mod.i$fitted.values, yTrain)
       matG.star.val[j, i] = G1.MSE.i
+      
+      matG.star.out[j, i] = integrate(outIntegral, lower = -1, upper = 1, TRUE, b1)$value
     }
     
     else {
-      matG.star.out[j, i] = MSE(sizeTrain, g2.Mod.i$fitted.values, yTrain)
+      
       matG.star.val[j, i] = G2.MSE.i
+      
+      matG.star.out[j, i] = integrate(outIntegral, lower = -1, upper = 1, FALSE, b2)$value 
     }
   }
 }
@@ -112,12 +135,11 @@ errorPlotData = data.frame("SetSize" = setSize,
                            "ValExp" = err.Gstar.val,
                            "OutExp" = err.Gstar.out)
 
-pdf("errorPlot.pdf")
+#pdf("Figures/errorPlot.pdf")
 ggplot(errorPlotData, aes(x = SetSize)) +
   geom_smooth(aes(y = ValExp), color = "black", linewidth = 2, linetype = 1, se = F) +
   geom_smooth(aes(y = OutExp), color = "red", linewidth = 2, linetype = 1, se = F) +
   xlab("Size of Validation Set") + ylab("Expected Error") +
-  geom_vline(xintercept = 18, linewidth = 0.5, linetype = 2, col = "blue") +
-  theme_bw(base_size = 16) + 
-  scale_x_continuous(sec.axis = dup_axis(~rev(.), name = "Size of Training Set"))
-dev.off()
+  #geom_vline(xintercept = 18, linewidth = 0.5, linetype = 2, col = "blue") +
+  theme_bw(base_size = 16) 
+#dev.off()
