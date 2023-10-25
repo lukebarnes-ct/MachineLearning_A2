@@ -1,6 +1,8 @@
 rm(list = ls())
 ### Libraries (if necessary)
 library(tidyverse)
+library(tictoc)
+library(pracma)
 
 set.seed(2023)
 
@@ -55,14 +57,15 @@ G2.MSE = MSE(N, lmPlotData$G2, y)
 
 ##### Question 1.B
 
-dataSize = 100
+dataSize = 10000
 setSize = 5:25
 
 matG.star.out = matrix(0, nrow = 21, ncol = dataSize)
 matG.star.val = matrix(0, nrow = 21, ncol = dataSize)
 
 f = function(x){
-  y = 0.8 * x
+  eps = rnorm(length(x), 0, 1)
+  y = 0.8 * x + eps
   return(y)
 }
 
@@ -82,10 +85,16 @@ outIntegral = function(x, g1, beta){
   return(int)
 }
 
+a = -1
+b = 1
+n = 100000
+
 for(i in 1:dataSize){
   
   xi = runif(N, -1, 1)
-  yi = f(xi) + rnorm(N, 0, 1)
+  yi = f(xi)
+  
+  tic()
   
   for (j in 1:length(setSize)){
     
@@ -116,16 +125,29 @@ for(i in 1:dataSize){
       
       matG.star.val[j, i] = G1.MSE.i
       
-      matG.star.out[j, i] = integrate(outIntegral, lower = -1, upper = 1, TRUE, b1)$value
+      xsam = runif(n, a, b)
+      int = (b-a) * mean(outIntegral(xsam, TRUE, b1))
+      matG.star.out[j, i] = int
+
+      # matG.star.out[j, i] = integrate(outIntegral, lower = -1, upper = 1, TRUE, b1)$value
+      # matG.star.out[j, i] = quadl(outIntegral, xa = -1, xb = 1, g1 = TRUE, beta = b1)
     }
     
     else {
       
       matG.star.val[j, i] = G2.MSE.i
       
-      matG.star.out[j, i] = integrate(outIntegral, lower = -1, upper = 1, FALSE, b2)$value 
+      xsam = runif(n, a, b) 
+      int = (b-a) * mean(outIntegral(xsam, FALSE, b2))
+      matG.star.out[j, i] = int
+
+      # matG.star.out[j, i] = integrate(outIntegral, lower = -1, upper = 1, FALSE, b2)$value
+      # matG.star.out[j, i] = quadl(outIntegral, xa = -1, xb = 1, g1 = FALSE, beta = b2)
+      
     }
   }
+  
+  toc()
 }
 
 err.Gstar.out = rowMeans(matG.star.out)
@@ -135,11 +157,12 @@ errorPlotData = data.frame("SetSize" = setSize,
                            "ValExp" = err.Gstar.val,
                            "OutExp" = err.Gstar.out)
 
-#pdf("Figures/errorPlot.pdf")
+pdf("Figures/errorPlot.pdf")
 ggplot(errorPlotData, aes(x = SetSize)) +
   geom_smooth(aes(y = ValExp), color = "black", linewidth = 2, linetype = 1, se = F) +
+  # geom_line(aes(y = ValExp), color = "black", linewidth = 2, linetype = 1) +
   geom_smooth(aes(y = OutExp), color = "red", linewidth = 2, linetype = 1, se = F) +
+  # geom_line(aes(y = OutExp), color = "red", linewidth = 2, linetype = 1) +
   xlab("Size of Validation Set") + ylab("Expected Error") +
-  #geom_vline(xintercept = 18, linewidth = 0.5, linetype = 2, col = "blue") +
   theme_bw(base_size = 16) 
-#dev.off()
+dev.off()

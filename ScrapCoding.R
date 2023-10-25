@@ -721,3 +721,146 @@ for(i in 1:dataSize){
   }
 }
 
+xxx = rnorm(N, 0, 1)
+dnorm(xxx, 0, 1)
+
+
+###############################################################################
+
+a = -1
+b = 1
+nnn = 10000
+
+xsam = runif(nnn, a, b)
+int = (b-a) * mean(fx(xsam))
+
+dataSize = 100
+setSize = 5:25
+
+matG.star.out = matrix(0, nrow = 21, ncol = dataSize)
+matG.star.out1 = matrix(0, nrow = 21, ncol = dataSize)
+matG.star.val = matrix(0, nrow = 21, ncol = dataSize)
+
+f = function(x){
+  y = 0.8 * x
+  return(y)
+}
+
+fx = function(x){
+  eps = rnorm(length(x), 0, 1)
+  y = 0.8 * x + eps
+  return(y)
+}
+
+outIntegral = function(x, g1, beta){
+  
+  if (g1 == TRUE){
+    g = 0.5 + (beta * x)
+  }
+  
+  else {
+    g = -0.5 + (beta * x)
+  }
+  
+  f = fx(x)
+  
+  int = (g - f)^2 * 0.5
+  return(int)
+}
+
+dx = 1/12.5
+phiX = 0.5
+
+for(i in 1:dataSize){
+  
+  xi = runif(N, -1, 1)
+  yi = f(xi) + rnorm(N, 0, 1)
+  
+  tic()
+  
+  for (j in 1:length(setSize)){
+    
+    sizeS = setSize[j]
+    sizeTrain = N - sizeS
+    
+    samp = sort(sample(1:N, sizeS, replace = FALSE))
+    
+    valData = xi[samp]
+    trainData = xi[-samp]
+    
+    yVal = yi[samp]
+    yTrain = yi[-samp]
+    
+    g1.Mod.i = lm(yTrain ~ 0 + trainData, offset = rep(0.5, sizeTrain))
+    b1 = as.numeric(g1.Mod.i$coefficients)
+    
+    g2.Mod.i = lm(yTrain ~ 0 + trainData, offset = rep(-0.5, sizeTrain))
+    b2 = as.numeric(g2.Mod.i$coefficients)
+    
+    g1.valPred = 0.5 + (b1 * valData)
+    g2.valPred = -0.5 + (b2 * valData)
+    
+    G1.MSE.i = MSE(sizeS, g1.valPred, yVal)
+    G2.MSE.i = MSE(sizeS, g2.valPred, yVal)
+    
+    if(G1.MSE.i < G2.MSE.i){
+      
+      matG.star.val[j, i] = G1.MSE.i
+      
+      g1.Pred = 0.5 + (b1 * xi)
+      actY = yi
+      
+      a = -1
+      b = 1
+      nnn = 100000
+      
+      xsam = runif(nnn, a, b)
+      int = (b-a) * mean(outIntegral(xsam, TRUE, b1))
+      matG.star.out[j, i] = int
+      
+      xxx = seq(a, b, length.out = nnn + 1)
+      h = (b - a) / nnn
+      int1 = h * (sum(outIntegral(xxx, TRUE, b1)) - 0.5 * (outIntegral(a, TRUE, b1) + outIntegral(b, TRUE, b1)))
+      
+      matG.star.out1[j, i] = int1
+      #matG.star.out[j, i] = sum((g1.Pred - actY)^2 * phiX * dx)
+      
+      # matG.star.out[j, i] = integrate(outIntegral, lower = -1, upper = 1, TRUE, b1, rel.tol = .Machine$double.eps^.05)$value
+      # matG.star.out[j, i] = quadl(outIntegral, xa = -1, xb = 1, g1 = TRUE, beta = b1)
+    }
+    
+    else {
+      
+      matG.star.val[j, i] = G2.MSE.i
+      
+      g2.Pred = -0.5 + (b2 * xi)
+      actY = yi
+      
+      #matG.star.out[j, i] = sum((g2.Pred - actY)^2 * phiX * dx)
+      
+      # matG.star.out[j, i] = integrate(outIntegral, lower = -1, upper = 1, FALSE, b2, rel.tol = .Machine$double.eps^.05)$value
+      # matG.star.out[j, i] = quadl(outIntegral, xa = -1, xb = 1, g1 = FALSE, beta = b2)
+      
+      a = -1
+      b = 1
+      nnn = 100000
+      
+      xsam = runif(nnn, a, b) 
+      int = (b-a) * mean(outIntegral(xsam, FALSE, b2))
+      matG.star.out[j, i] = int
+      
+      xxx = seq(a, b, length.out = nnn + 1)
+      h = (b - a) / nnn
+      int1 = h * (sum(outIntegral(xxx, FALSE, b2)) - 0.5 * (outIntegral(a, FALSE, b2) + outIntegral(b, FALSE, b2)))
+      
+      matG.star.out1[j, i] = int1
+      
+    }
+  }
+  
+  toc()
+}
+
+err.Gstar.out = rowMeans(matG.star.out)
+err.Gstar.out1 = rowMeans(matG.star.out1)
+err.Gstar.val = rowMeans(matG.star.val)
