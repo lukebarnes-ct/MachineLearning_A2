@@ -864,3 +864,128 @@ for(i in 1:dataSize){
 err.Gstar.out = rowMeans(matG.star.out)
 err.Gstar.out1 = rowMeans(matG.star.out1)
 err.Gstar.val = rowMeans(matG.star.val)
+
+valPlotData = data.frame("ValErr" = valErr[1, ],
+                         "TrainErr" = inErr[1, ],
+                         "Nus" = nus)
+
+#pdf("Figures/valPlot_Q4.pdf")
+ggplot(valPlotData, aes(x = Nus)) +
+  #geom_line(aes(y = TrainErr), col = "black", linewidth = 1) +
+  #geom_point(aes(y = TrainErr), col = "black", size = 4) +
+  geom_line(aes(y = ValErr), col = "red", linewidth = 1) +
+  #geom_point(aes(y = ValErr), col = "red", size = 4) +
+  geom_vline(xintercept = nus[which.min(valErr[j, ])], linewidth = 0.5, linetype = 2, col = "blue") +
+  xlab(expression(nu)) +
+  ylab("Cross Entropy Error") +
+  theme_bw(base_size = 16)
+#dev.off()
+
+ggplot(valPlotData, aes(x = Nus)) +
+  geom_line(aes(y = ValErr3), col = "black", linewidth = 1) +
+  geom_line(aes(y = ValErr4), col = "red", linewidth = 1) +
+  geom_line(aes(y = ValErr5), col = "darkgreen", linewidth = 1) +
+  geom_line(aes(y = ValErr6), col = "royalblue", linewidth = 1) +
+  geom_line(aes(y = ValErr7), col = "violet", linewidth = 1) +
+  geom_line(aes(y = ValErr8), col = "darkorange", linewidth = 1) +
+  geom_vline(xintercept = nus[which.min(valErr)], linewidth = 0.5, linetype = 2, col = "blue") +
+  xlab(expression(nu)) +
+  ylab("Validation Error") +
+  theme_bw(base_size = 16)
+
+
+##### Question 1.B
+
+dataSize = 100
+setSize = 5:25
+
+matG.star.out = matrix(0, nrow = 21, ncol = dataSize)
+matG.star.val = matrix(0, nrow = 21, ncol = dataSize)
+
+f = function(x){
+  y = 0.8 * x
+  return(y)
+}
+
+outIntegral = function(x, g1, beta){
+  
+  if (g1 == TRUE){
+    g = 0.5 + (beta * x)
+  }
+  
+  else {
+    g = -0.5 + (beta * x)
+  }
+  
+  f = f(x)
+  
+  int = (g - f + 1)^2 * 0.5
+  return(int)
+}
+
+for(i in 1:dataSize){
+  
+  xi = runif(N, -1, 1)
+  yi = f(xi) + rnorm(N, 0, 1)
+  
+  tic()
+  
+  for (j in 1:length(setSize)){
+    
+    sizeS = setSize[j]
+    sizeTrain = N - sizeS
+    
+    samp = sort(sample(1:N, sizeS, replace = FALSE))
+    
+    valData = xi[samp]
+    trainData = xi[-samp]
+    
+    yVal = yi[samp]
+    yTrain = yi[-samp]
+    
+    g1.Mod.i = lm(yTrain ~ 0 + trainData, offset = rep(0.5, sizeTrain))
+    b1 = as.numeric(g1.Mod.i$coefficients)
+    
+    g2.Mod.i = lm(yTrain ~ 0 + trainData, offset = rep(-0.5, sizeTrain))
+    b2 = as.numeric(g2.Mod.i$coefficients)
+    
+    g1.valPred = 0.5 + (b1 * valData)
+    g2.valPred = -0.5 + (b2 * valData)
+    
+    G1.MSE.i = MSE(sizeS, g1.valPred, yVal)
+    G2.MSE.i = MSE(sizeS, g2.valPred, yVal)
+    
+    if(G1.MSE.i < G2.MSE.i){
+      
+      matG.star.val[j, i] = G1.MSE.i
+      
+      matG.star.out[j, i] = quadl(outIntegral, xa = -1, xb = 1, g1 = TRUE, beta = b1)
+    }
+    
+    else {
+      
+      matG.star.val[j, i] = G2.MSE.i
+      
+      matG.star.out[j, i] = quadl(outIntegral, xa = -1, xb = 1, g1 = FALSE, beta = b2)
+      
+    }
+  }
+  
+  toc()
+}
+
+err.Gstar.out = rowMeans(matG.star.out)
+err.Gstar.val = rowMeans(matG.star.val)
+
+errorPlotData = data.frame("SetSize" = setSize,
+                           "ValExp" = err.Gstar.val,
+                           "OutExp" = err.Gstar.out)
+
+ggplot(errorPlotData, aes(x = SetSize)) +
+  geom_smooth(aes(y = ValExp), color = "black", linewidth = 2, linetype = 1, se = F) +
+  # geom_line(aes(y = ValExp), color = "black", linewidth = 2, linetype = 1) +
+  geom_smooth(aes(y = OutExp), color = "red", linewidth = 2, linetype = 1, se = F) +
+  # geom_line(aes(y = OutExp), color = "red", linewidth = 2, linetype = 1) +
+  xlab("Size of Validation Set") + ylab("Expected Error") +
+  theme_bw(base_size = 16) 
+

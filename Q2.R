@@ -2,7 +2,6 @@ rm(list = ls())
 ### Libraries (if necessary)
 library(tidyverse)
 library(pracma)
-library(glmnet)
 
 set.seed(2023)
 
@@ -22,12 +21,12 @@ lmPlotData = data.frame("X" = x,
                         "undX" = xVal,
                         "undY" = yVal)
 
-pdf("modPlot_Q2.pdf")
+pdf("Figures/modPlot_Q2.pdf")
 ggplot(lmPlotData, aes(x = undX)) +
   geom_line(aes(y = undY), color = "black", linewidth = 3, linetype = 1) +
   geom_point(aes(x = X, y = Y), color = "red", size = 4) +
   labs(x = "X", y = "Y") +
-  ylim(-3, 3) +
+  ylim(-3, 3.5) +
   theme_bw(base_size = 16)
 dev.off()
 
@@ -76,14 +75,14 @@ legPlotData = data.frame("X" = x,
                          "leg1" = legPred[, 1],
                          "leg2" = legPred[, 2])
 
-pdf("legPlot_Q2.pdf")
+pdf("Figures/legPlot_Q2.pdf")
 ggplot(legPlotData) +
   geom_line(aes(x = undX, y = undY), color = "black", linewidth = 3, linetype = 1) +
   geom_point(aes(x = X, y = Y), color = "black", size = 4) +
   geom_line(aes(x = X, y = leg1), color = "red", linewidth = 2, linetype = 1) +
   geom_line(aes(x = X, y = leg2), color = "blue", linewidth = 2, linetype = 1) +
   labs(x = "X", y = "Y") +
-  ylim(-3, 3) +
+  ylim(-3, 3.5) +
   theme_bw(base_size = 16)
 dev.off()
 
@@ -129,10 +128,11 @@ for (c in 1:length(lambdas)){
 cvPlotData = data.frame("Lambdas" = lambdas,
                         "CVError" = cvError)
 
-pdf("cvPlot_Q2.pdf")
+pdf("Figures/cvPlot_Q2.pdf")
 ggplot(cvPlotData) +
   geom_line(aes(x = Lambdas, y = CVError), color = "black", 
             linewidth = 3, linetype = 1) +
+  geom_vline(xintercept = lambdas[which.min(cvError)], linewidth = 0.5, linetype = 2, col = "blue") +
   labs(x = expression(lambda), y = "CV Error") +
   theme_bw(base_size = 16)
 dev.off()
@@ -151,13 +151,13 @@ legFitPlotData = data.frame("s0" = legFitPred,
                             "undX" = xVal,
                             "undY" = yVal)
 
-pdf("legFitPlot_Q2.pdf")
+pdf("Figures/legFitPlot_Q2.pdf")
 ggplot(legFitPlotData) +
   geom_line(aes(x = undX, y = undY), color = "black", linewidth = 3, linetype = 1) +
   geom_point(aes(x = X, y = Y), color = "black", size = 4) +
-  geom_line(aes(x = X, y = s0), color = "red", linewidth = 3, linetype = 1) +
+  geom_line(aes(x = X, y = s0), color = "blue", linewidth = 3, linetype = 1) +
   labs(x = "X", y = "Y") +
-  ylim(-3, 3) +
+  ylim(-3, 3.5) +
   theme_bw(base_size = 16)
 dev.off()
 

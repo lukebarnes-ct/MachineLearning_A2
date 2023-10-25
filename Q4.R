@@ -3,6 +3,7 @@ rm(list = ls())
 library(tidyverse)
 library(pracma)
 library(colorspace)
+library(paletteer)
 
 ### Data
 
@@ -34,7 +35,7 @@ var = dat %>%
 clPlotData = data.frame("X1" = dat$X1,
                         "X2" = dat$X2)
 
-pdf("dataPlot_Q4.pdf")
+pdf("Figures/dataPlot_Q4.pdf")
 ggplot(clPlotData, aes(x = X1)) +
   geom_point(aes(x = X1, y = X2), color = colours[var$Response], size = 4) +
   labs(x = "X1", y = "X2") +
@@ -74,27 +75,6 @@ sig1 = function(z){
   tanh(z)
 }
 
-## Obj Function
-
-objFunc = function(y, yhat, N){
-  
-  error = y * 0
-  ind1 = which(y == 1, arr.ind = TRUE)
-  
-  error[ind1] = log(yhat[ind1])
-  
-  if(sum(is.na(yhat[ind1])) > 0 | sum(yhat[yhat == 0]) > 0)
-  
-    which(yhat == 0, )
-  outerSum = sum(error)
-  
-  obj = -(1/N) * outerSum
-  
-  # print(paste0("OBJ is: ", obj))
-  
-  return(obj)
-}
-
 ## Feed Forward Neural Network
 
 neuralNet = function(X, Y, theta, m, nu){
@@ -129,9 +109,8 @@ neuralNet = function(X, Y, theta, m, nu){
   ind1 = which(Y == 1, arr.ind = TRUE)
   error[ind1] = log(yHat[ind1])
 
-  # E1 = objFunc(Y, yHat, N)
   E1 = - (1/N) * sum(error)
-  E2 = E1 + (nu * (sum(W1^2) + sum(W2^2))/N)
+  E2 = E1 + ((nu/2) * (sum(W1^2) + sum(W2^2))/N)
   
   return(list(A2 = A2, A1 = A1, E1 = E1, E2 = E2))
 }
@@ -140,7 +119,8 @@ X = as.matrix(dat[, 1:2])
 Y = as.matrix(dat[, 3:5])
 
 nu  = 0
-m   = 360/90
+# m   = 360/90
+m = 9
 
 p = dim(X)[2]
 q = dim(Y)[2]
@@ -154,8 +134,6 @@ obj = function(pars){
 }
 
 obj(thetaRand)
-
-fitMod = neuralNet(X, Y, thetaRand, m, nu)
 
 # Fit the neural network using a standard optimizer in R:
 
@@ -184,47 +162,74 @@ objPen = function(pars){
 
 objPen(thetaRand)
 
-M = 25
-K = 1
-valErr = matrix(0, K, M)
-inErr = valErr
-nus = exp(seq(-7.6, -2.3, length = M))
+M = 20
+#nus = exp(seq(-11.51293, -2.302585, length = M))
+#nus = exp(seq(-8, -2.3, length = M))
+nus = exp(seq(log(1e-2), log(5e-1), length = M))
+ms = 3:8
 
-for (i in 1:M) {
-    
-    nu = nus[i]
-    resOpt = nlm(objPen, thetaRand, iterlim = 1000)
-    
-    resIn = neuralNet(XTrain, YTrain, resOpt$estimate, m, 0)
-    inErr[K, i] = resIn$E1
-    
-    resVal = neuralNet(XVal, YVal, resOpt$estimate, m, 0)
-    valErr[K, i] = resVal$E1
-    
-    print(paste0("Validation Run ", K, " ,", i, "| nu =", round(nu, 4)))
-    print(paste0("In Error: ", inErr[K, i]))
-    print(paste0("Val Error: ", valErr[K, i]))
-    
+valErr = matrix(0, length(ms), M)
+inErr = valErr
+
+for (j in 1:length(ms)){
+  
+  m = ms[j]
+
+  for (i in 1:M) {
+      
+      nu = nus[i]
+      resOpt = nlm(objPen, thetaRand, iterlim = 1000)
+      
+      resIn = neuralNet(XTrain, YTrain, resOpt$estimate, m, 0)
+      inErr[j, i] = resIn$E1
+      
+      resVal = neuralNet(XVal, YVal, resOpt$estimate, m, 0)
+      valErr[j, i] = resVal$E1
+      
+      print(paste0("Validation Run | m = ", m, " ,", i, "| nu =", round(nu, 4)))
+      print(paste0("In Error: ", inErr[j, i]))
+      print(paste0("Val Error: ", valErr[j, i]))
+      
+  }
+  
 }
 
-valPlotData = data.frame("ValErr" = c(valErr),
-                         "TrainErr" = c(inErr),
+valPlotData = data.frame("ValErr3" = valErr[1, ],
+                         "ValErr4" = valErr[2, ],
+                         "ValErr5" = valErr[3, ],
+                         "ValErr6" = valErr[4, ],
+                         "ValErr7" = valErr[5, ],
+                         "ValErr8" = valErr[6, ],
                          "Nus" = nus)
-pdf("valPlot_Q4.pdf")
-ggplot(valPlotData, aes(x = Nus)) +
-  #geom_line(aes(y = TrainErr), col = "black", linewidth = 1) +
-  geom_point(aes(y = TrainErr), col = "black", size = 4) +
-  #geom_line(aes(y = ValErr), col = "red", linewidth = 1) +
-  geom_point(aes(y = ValErr), col = "red", size = 4) +
-  xlab("Nu") +
-  ylab("Cross Entropy Error") +
-  theme_bw(base_size = 16)
+
+valPlotData = valPlotData %>%
+  pivot_longer(col = starts_with("ValErr"), names_to = "ValErr", names_prefix = "ValErr") %>%
+  rename("Nodes" = "ValErr")
+
+pdf("Figures/valPlot_Q4.pdf")
+ggplot(valPlotData, aes(x = Nus, y = value, col = Nodes)) +
+  geom_line(linewidth = 2) +
+  geom_vline(xintercept = nus[which.min(valErr)], linewidth = 0.5, linetype = 2, col = "black") +
+  xlab(expression(nu)) +
+  ylab("Validation Error") +
+  scale_color_paletteer_d("ggthemes::calc") +
+  theme_bw(base_size = 16) +
+  theme(legend.text = element_text(size = 12),
+        legend.key.height = unit(0.5, 'cm'),
+        legend.key.width= unit(1.25, 'cm'),
+        legend.position = c(0.9, 0.8),
+        legend.background = element_rect(fill = "white",
+                                         linewidth = 0.6, 
+                                         linetype = "solid", 
+                                         colour = "black"))
 dev.off()
+
 
 ##### Question 4.C
 
 ## Regularised Neural Network and corresponding response curve
 
+m = 8
 nu = nus[which.min(valErr)]
 optRes = nlm(objPen, thetaRand, iterlim = 1000)
 
@@ -259,11 +264,12 @@ yyVar = xxPlotData %>%
 oldData = var %>%
   mutate(numResponse = recode(Response, "Yi1" = 1, "Yi2" = 2, "Yi3" = 3))
 
-pdf("responsePlot_Q4.pdf")
+pdf("Figures/responsePlot_Q4.pdf")
 ggplot(yyVar, aes(x = X1)) +
   geom_point(aes(x = X1, y = X2), color = color.gradient(yyVar$Response), size = 4) +
-  geom_text(data = oldData, aes(x = X1, y = X2, label = numResponse), size = 5, col = "white") +
+  geom_text(data = oldData, aes(x = X1, y = X2, label = numResponse), 
+            size = 5, col = "white") +
   labs(x = "X1", y = "X2") +
-  ylim(-4, 4) +
+  ylim(-4.1, 4) +
   theme_bw(base_size = 16)
-dev.off( )
+dev.off()

@@ -85,13 +85,17 @@ isoData = data.frame("D1" = isoMod$D1,
                      "D2" = isoMod$D2,
                      "Response" = as.factor(Y))
 
-pdf("embedPlot_Q3.pdf")
+pdf("Figures/embedPlot_Q3.pdf")
 ggplot(isoData, aes(x = D1, y = D2, col = Response)) +
   geom_point(size = 3) +
   xlab("Dimension 1") +
   ylab("Dimension 2") +
   theme_bw(base_size = 14) +
   scale_color_manual(values = c("3" = "darkblue", "7" = "darkorange")) + 
-  theme(legend.title = element_blank(),
-        legend.text = element_text(size = 15))
+  theme(legend.text = element_text(size = 15),
+        legend.position = c(0.85, 0.15),
+        legend.background = element_rect(fill = "white",
+                                         linewidth = 0.6, 
+                                         linetype = "solid", 
+                                         colour = "black"))
 dev.off()
